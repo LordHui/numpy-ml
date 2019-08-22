@@ -14,9 +14,12 @@
 #
 import os
 import sys
+import inspect
 
 sys.path.insert(0, os.path.abspath(".."))
 
+
+gh_url = "https://github.com/ddbourgin/numpy-ml"
 
 # -- Project information -----------------------------------------------------
 
@@ -25,9 +28,9 @@ copyright = "2019, David Bourgin"
 author = "David Bourgin"
 
 # The short X.Y version
-version = ""
+version = "0.1"
 # The full version, including alpha/beta/rc tags
-release = ""
+release = "0.1.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -47,11 +50,48 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
     "sphinx.ext.ifconfig",
-    "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
+    "sphinx.ext.linkcode"
     #  "numpydoc",
 ]
+
+# to avoid memory errors in the read-the-docs build process
+autodoc_mock_imports = ["tensorflow", "torch", "gym"]
+
+# Try to link to source code on GitHub
+def linkcode_resolve(domain, info):
+    if domain != "py":
+        return None
+
+    module = info.get("module", None)
+    fullname = info.get("fullname", None)
+
+    if not module or not fullname:
+        return None
+
+    obj = sys.modules.get(module, None)
+    if obj is None:
+        return None
+
+    for part in fullname.split("."):
+        obj = getattr(obj, part)
+        if isinstance(obj, property):
+            obj = obj.fget
+
+    try:
+        file = inspect.getsourcefile(obj)
+        if file is None:
+            return None
+    except:
+        return None
+
+    file = os.path.relpath(file, start=os.path.abspath(".."))
+    source, line_start = inspect.getsourcelines(obj)
+    line_end = line_start + len(source) - 1
+    filename = f"{file}#L{line_start}-L{line_end}"
+    return f"{gh_url}/blob/master/{filename}"
+
 
 # Napoleon settings
 # https://sphinxcontrib-napoleon.readthedocs.io/en/latest/sphinxcontrib.napoleon.html#sphinxcontrib.napoleon.Config
@@ -111,6 +151,7 @@ html_theme = "alabaster"
 # documentation.
 #
 # html_theme_options = {}
+html_css_files = ["css/custom.css"]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -136,13 +177,14 @@ html_sidebars = {
 }
 
 html_theme_options = {
-    #  'logo': 'logo.png',
     "github_user": "ddbourgin",
     "github_repo": "numpy-ml",
     "description": "Machine learning, in NumPy",
-    #  'analytics_id': "", XXX: TODO
     "github_button": True,
     "show_powered_by": False,
+    "fixed_sidebar": True,
+    "analytics_id": "UA-65839510-3",
+    #  'logo': 'logo.png',
 }
 
 
